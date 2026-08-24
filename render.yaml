@@ -1,0 +1,28 @@
+services:
+  # Streamlit Web App (Dashboard + Prescriptive Chat)
+  - type: web
+    name: prescriptive-maintenance-ui
+    env: python
+    buildCommand: pip install -r requirements.txt && python train_pipeline.py
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.13
+      - key: GEMINI_API_KEY
+        sync: false
+    disk:
+      name: maintenance-data
+      mountPath: /app/db
+      sizeGB: 5
+
+  # FastAPI REST Backend (Edge / Industrial Integration)
+  - type: web
+    name: prescriptive-maintenance-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.13
+      - key: GEMINI_API_KEY
+        sync: false
