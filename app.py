@@ -18,7 +18,7 @@ from src.classifier import get_classifier
 from src.similarity import get_similarity_engine
 from src.rag_engine import get_rag_engine
 from src.document_processor import get_document_processor
-from src.database import get_kpis, get_fault_distribution, get_time_series_faults, get_db_connection
+from src.database import get_kpis, get_fault_distribution, get_time_series_faults, get_db_connection, init_db
 
 # Page configuration
 st.set_page_config(
@@ -28,72 +28,43 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for Premium Industrial UI
+# Auto-initialize database tables if not yet present
+init_db()
+
+# Custom CSS for Industrial UI with crisp contrast
 st.markdown("""
 <style>
-    /* Global Styles */
-    .main {
-        background-color: #0e1117;
-    }
-    
-    /* Metrics Header Cards */
+    /* Metric Cards */
     .metric-container {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         border: 1px solid #334155;
         border-radius: 12px;
         padding: 18px 20px;
-        color: #f8fafc;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-    .metric-container:hover {
-        transform: translateY(-2px);
-        border-color: #38bdf8;
+        color: #f8fafc !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        margin-bottom: 10px;
     }
     .metric-value {
         font-size: 2.2rem;
         font-weight: 700;
-        color: #38bdf8;
+        color: #38bdf8 !important;
         margin: 4px 0;
     }
     .metric-label {
         font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #94a3b8;
+        color: #cbd5e1 !important;
     }
     
-    /* Prescriptive Alert Boxes */
-    .prescriptive-box {
+    /* Result Box */
+    .diagnosis-card {
         background: #1e293b;
-        border-left: 5px solid #38bdf8;
-        border-radius: 8px;
         padding: 20px;
-        margin: 15px 0;
-    }
-    .alert-nodoc {
-        background: #2a1f1d;
-        border-left: 5px solid #f97316;
-        border-radius: 8px;
-        padding: 20px;
-        margin: 15px 0;
-    }
-    .alert-normal {
-        background: #142e2b;
-        border-left: 5px solid #10b981;
-        border-radius: 8px;
-        padding: 20px;
-        margin: 15px 0;
-    }
-    
-    /* Custom Badge */
-    .badge-fault {
-        display: inline-block;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        text-transform: uppercase;
+        border-radius: 10px;
+        border: 1px solid #334155;
+        color: #f8fafc;
+        margin-bottom: 15px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -246,18 +217,17 @@ SAMPLE_PRESETS = {
 
 # Sidebar Navigation & Configuration
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/robot-settings.png", width=70)
-    st.title("Manutenção Prescritiva")
-    st.caption("Plataforma Industrial de IA & Confiabilidade")
+    st.title("🏭 Prescritivo IA")
+    st.caption("Plataforma Industrial de Confiabilidade")
     st.markdown("---")
 
     # API Configuration
-    st.subheader("🔑 Configuração da IA")
+    st.subheader("🔑 Configuração Gemini")
     api_key_input = st.text_input(
         "Google Gemini API Key:",
         type="password",
         value=os.getenv("GEMINI_API_KEY", ""),
-        help="Insira sua chave do Google AI Studio para ativar o RAG conversacional avançado com Gemini 2.0 Flash."
+        help="Insira sua chave do Google AI Studio para ativar o RAG conversacional com Gemini 2.0 Flash."
     )
     if api_key_input:
         get_rag_engine().set_api_key(api_key_input)
@@ -266,16 +236,16 @@ with st.sidebar:
         st.info("Modo Offline / RAG Determinístico Ativo 🟡")
 
     st.markdown("---")
-    st.subheader("📡 Status dos Subsistemas")
+    st.subheader("📡 Status do Sistema")
     classifier = get_classifier()
     model_loaded = classifier.model is not None
-    st.write(f"• **Classificador ML:** {'🟢 Carregado (RF 84.2%)' if model_loaded else '🔴 Não Carregado'}")
-    st.write("• **Busca por Similaridade:** 🟢 Ativo (166k regs)")
+    st.write(f"• **Classificador ML:** {'🟢 Carregado (RF 84.2%)' if model_loaded else '🟡 Inicializando...'}")
+    st.write("• **Busca Similaridade:** 🟢 Ativo")
     st.write("• **Vector Store (ChromaDB):** 🟢 Ativo")
     st.write("• **Banco SQLite:** 🟢 Conectado")
 
     st.markdown("---")
-    st.caption("Desenvolvido para SENAI SC | Indústria 4.0")
+    st.caption("SENAI SC | Manutenção Prescritiva")
 
 
 # Header
@@ -311,21 +281,21 @@ with tab_dash:
         st.markdown(f"""
         <div class="metric-container">
             <div class="metric-label">Anomalias / Falhas Registradas</div>
-            <div class="metric-value" style="color: #f87171;">{kpis['total_problems']:,}</div>
+            <div class="metric-value" style="color: #f87171 !important;">{kpis['total_problems']:,}</div>
         </div>
         """, unsafe_allow_html=True)
     with c3:
         st.markdown(f"""
         <div class="metric-container">
             <div class="metric-label">Manuais Técnicos Cadastrados</div>
-            <div class="metric-value" style="color: #34d399;">{kpis['total_docs']}</div>
+            <div class="metric-value" style="color: #34d399 !important;">{kpis['total_docs']}</div>
         </div>
         """, unsafe_allow_html=True)
     with c4:
         st.markdown(f"""
         <div class="metric-container">
             <div class="metric-label">Prescrições Geradas</div>
-            <div class="metric-value" style="color: #a78bfa;">{kpis['total_prescriptions']}</div>
+            <div class="metric-value" style="color: #a78bfa !important;">{kpis['total_prescriptions']}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -352,28 +322,35 @@ with tab_dash:
                 plot_bgcolor="rgba(0,0,0,0)",
             )
             st.plotly_chart(fig_dist, use_container_width=True)
+        else:
+            st.info("Nenhum dado registrado para exibir no gráfico.")
 
     with col_chart2:
         st.markdown("##### 📈 Volume de Ocorrências por Tipo de Defeito")
         if not df_dist.empty:
             df_prob = df_dist[df_dist["is_problem"] == 1].sort_values("count", ascending=True)
-            fig_bar = px.bar(
-                df_prob,
-                x="count",
-                y="fault_category",
-                orientation="h",
-                color="count",
-                color_continuous_scale="Viridis",
-            )
-            fig_bar.update_layout(
-                template="plotly_dark",
-                margin=dict(l=20, r=20, t=30, b=20),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                xaxis_title="Número de Leituras",
-                yaxis_title="Defeito",
-            )
-            st.plotly_chart(fig_bar, use_container_width=True)
+            if not df_prob.empty:
+                fig_bar = px.bar(
+                    df_prob,
+                    x="count",
+                    y="fault_category",
+                    orientation="h",
+                    color="count",
+                    color_continuous_scale="Viridis",
+                )
+                fig_bar.update_layout(
+                    template="plotly_dark",
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis_title="Número de Leituras",
+                    yaxis_title="Defeito",
+                )
+                st.plotly_chart(fig_bar, use_container_width=True)
+            else:
+                st.info("Nenhuma falha registrada.")
+        else:
+            st.info("Nenhum dado registrado.")
 
     # Timeline Row
     st.markdown("##### ⏱️ Linha Temporal de Detecções de Anomalias")
@@ -394,6 +371,8 @@ with tab_dash:
             yaxis_title="Contagem de Eventos",
         )
         st.plotly_chart(fig_time, use_container_width=True)
+    else:
+        st.info("Aguardando novas leituras para gerar a série temporal.")
 
 
 # ==============================================================================
@@ -406,7 +385,6 @@ with tab_event:
     # Preset selection buttons
     st.markdown("**Carregar Exemplo de Teste:**")
     cols_btn = st.columns(len(SAMPLE_PRESETS))
-    selected_preset_name = None
     for idx, (p_name, p_data) in enumerate(SAMPLE_PRESETS.items()):
         if cols_btn[idx].button(p_name, key=f"btn_preset_{idx}"):
             st.session_state["input_json_text"] = json.dumps(p_data, indent=2)
@@ -460,7 +438,7 @@ with tab_event:
                 
                 badge_color = "#10b981" if predicted_category == "normal" else ("#38bdf8" if presc_res["has_document"] else "#f97316")
                 st.markdown(f"""
-                <div style="background: #1e293b; padding: 15px 20px; border-radius: 10px; border: 1px solid #334155;">
+                <div class="diagnosis-card">
                     <div style="font-size: 0.9rem; color: #94a3b8;">DEFEITO IDENTIFICADO</div>
                     <div style="font-size: 1.8rem; font-weight: 700; color: {badge_color};">
                         {predicted_category.upper().replace('_', ' ')}
@@ -538,7 +516,7 @@ with tab_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    if user_prompt := st.chat_input("Digite sua dúvida técnica... (ex: Qual o procedimento para corrigir pél manco no alinhamento?)"):
+    if user_prompt := st.chat_input("Digite sua dúvida técnica... (ex: Qual o procedimento para corrigir pé manco no alinhamento?)"):
         st.session_state["chat_messages"].append({"role": "user", "content": user_prompt})
         with st.chat_message("user"):
             st.markdown(user_prompt)

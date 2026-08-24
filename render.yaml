@@ -4,7 +4,7 @@ services:
     name: prescriptive-maintenance-ui
     env: python
     buildCommand: pip install -r requirements.txt && python train_pipeline.py
-    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false --server.enableCORS false --server.enableXsrfProtection false --server.enableWebsocketCompression false
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.13

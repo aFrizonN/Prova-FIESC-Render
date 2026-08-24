@@ -1,0 +1,69 @@
+================================================================================
+PROJETO: SISTEMA DE MANUTENÇÃO PRESCRITIVA INDUSTRIAL (IA & ANALYTICS)
+PROCESSO SELETIVO - DEV FULL STACK / IA & PYTHON
+================================================================================
+
+Prezados Avaliadores,
+
+Este projeto foi estruturado seguindo as melhores práticas de Engenharia de Software,
+Machine Learning, RAG (Retrieval-Augmented Generation) e Arquitetura Cloud.
+
+--------------------------------------------------------------------------------
+1. ACESSO RÁPIDO (DEMONSTRAÇÃO ONLINE / DEPLOY)
+--------------------------------------------------------------------------------
+Aplicação Web Interativa (Streamlit) em Produção:
+-> URL: https://manutencao-prescritiva-ui.onrender.com (ou link correspondente no Render)
+
+Repositório no GitHub (com histórico de commits e documentação completa):
+-> URL: https://github.com/aFrizonN/Prova-FIESC-Render
+
+--------------------------------------------------------------------------------
+2. ESTRUTURA DO PACOTE ENVIADO
+--------------------------------------------------------------------------------
+Para respeitar o limite de 5 MB da plataforma de submissão, os artefatos binários
+volumosos gerados automaticamente (como arquivos de cache, banco SQLite e modelos
+.joblib com mais de 300 MB) e o dataset original (banner.csv) foram omitidos deste .rar,
+pois são gerados e treinados em tempo de execução através do pipeline automatizado.
+
+Arquivos inclusos:
+- src/                  : Módulos do sistema (Classificador, RAG, Similaridade, DB, OCR)
+- tests/                : Suíte de testes unitários e de integração
+- docs/                 : Documentação técnica e manuais de manutenção
+- app.py                : Interface Web Completa (Dashboard, KPIs, RAG Chatbot)
+- api.py                : API RESTful (FastAPI) com endpoints para telemetria
+- train_pipeline.py     : Pipeline completo de ingestão, engenharia de features e treino
+- config.py             : Central de configurações e paths
+- requirements.txt      : Dependências do projeto
+- Dockerfile / render   : Arquivos de containerização e deploy em nuvem
+- README.md             : Documentação arquitetural e técnica detalhada
+
+--------------------------------------------------------------------------------
+3. COMO EXECUTAR LOCALMENTE
+--------------------------------------------------------------------------------
+Caso deseje rodar a aplicação localmente:
+
+Passo 1: Crie o ambiente virtual e instale as dependências:
+   python -m venv venv
+   source venv/bin/activate  (ou venv\Scripts\activate no Windows)
+   pip install -r requirements.txt
+
+Passo 2: Certifique-se de que o arquivo "banner.csv" esteja na pasta "Prova/":
+   (Copie o banner.csv fornecido na prova para dentro da pasta Prova/)
+
+Passo 3: Configure a variável de ambiente do Gemini:
+   Crie um arquivo .env contendo:
+   GEMINI_API_KEY=sua_chave_aqui
+
+Passo 4: Execute o pipeline de treino e ingestão de dados:
+   python train_pipeline.py
+
+Passo 5: Inicie a aplicação Web (Streamlit):
+   streamlit run app.py
+
+(Opcional) Para rodar a API REST FastAPI:
+   uvicorn api:app --reload --port 8000
+
+(Opcional) Para executar os testes:
+   pytest tests/
+
+================================================================================

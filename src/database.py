@@ -109,6 +109,7 @@ def init_db() -> None:
 
 def ingest_dataframe_to_db(df: pd.DataFrame, batch_size: int = 10000) -> None:
     """Ingests processed DataFrame into SQLite database efficiently."""
+    init_db()
     conn = get_db_connection()
     
     # Check if table already has rows
@@ -157,6 +158,7 @@ def log_prescription(
     raw_event_json: Optional[dict] = None,
 ) -> int:
     """Logs a generated prescription to the database."""
+    init_db()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -180,6 +182,7 @@ def log_prescription(
 
 def log_chat_message(session_id: str, role: str, message: str, event_context: Optional[dict] = None) -> None:
     """Saves a conversation message to chat history."""
+    init_db()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -197,16 +200,26 @@ def log_chat_message(session_id: str, role: str, message: str, event_context: Op
 
 def get_kpis() -> Dict[str, Any]:
     """Retrieves top-level KPIs for the Streamlit dashboard."""
+    init_db()
     conn = get_db_connection()
-    total_events = conn.execute("SELECT COUNT(*) FROM sensor_readings").fetchone()[0]
-    total_problems = conn.execute("SELECT COUNT(*) FROM sensor_readings WHERE is_problem = 1").fetchone()[0]
-    total_docs = conn.execute("SELECT COUNT(*) FROM fault_documents").fetchone()[0]
-    total_prescriptions = conn.execute("SELECT COUNT(*) FROM prescriptions_history").fetchone()[0]
-    conn.close()
+    try:
+        total_events = conn.execute("SELECT COUNT(*) FROM sensor_readings").fetchone()[0]
+        total_problems = conn.execute("SELECT COUNT(*) FROM sensor_readings WHERE is_problem = 1").fetchone()[0]
+        total_docs = conn.execute("SELECT COUNT(*) FROM fault_documents").fetchone()[0]
+        total_prescriptions = conn.execute("SELECT COUNT(*) FROM prescriptions_history").fetchone()[0]
+    except Exception as e:
+        logger.warning(f"Error querying KPIs: {e}")
+        total_events = 0
+        total_problems = 0
+        total_docs = 0
+        total_prescriptions = 0
+    finally:
+        conn.close()
+
     return {
         "total_events": total_events,
         "total_problems": total_problems,
-        "normal_ratio": ((total_events - total_problems) / (total_events + 1e-6)) * 100,
+        "normal_ratio": ((total_events - total_problems) / (total_events + 1e-6)) * 100 if total_events > 0 else 100.0,
         "total_docs": total_docs,
         "total_prescriptions": total_prescriptions,
     }
@@ -214,26 +227,38 @@ def get_kpis() -> Dict[str, Any]:
 
 def get_fault_distribution() -> pd.DataFrame:
     """Returns frequency of fault categories."""
+    init_db()
     conn = get_db_connection()
-    df = pd.read_sql_query("""
-        SELECT fault_category, COUNT(*) as count, is_problem
-        FROM sensor_readings
-        GROUP BY fault_category
-        ORDER BY count DESC
-    """, conn)
-    conn.close()
+    try:
+        df = pd.read_sql_query("""
+            SELECT fault_category, COUNT(*) as count, is_problem
+            FROM sensor_readings
+            GROUP BY fault_category
+            ORDER BY count DESC
+        """, conn)
+    except Exception as e:
+        logger.warning(f"Error querying fault distribution: {e}")
+        df = pd.DataFrame(columns=["fault_category", "count", "is_problem"])
+    finally:
+        conn.close()
     return df
 
 
 def get_time_series_faults() -> pd.DataFrame:
     """Returns daily counts of fault occurrences for timeline charts."""
+    init_db()
     conn = get_db_connection()
-    df = pd.read_sql_query("""
-        SELECT substr(created_at, 1, 10) as date, fault_category, COUNT(*) as occurrences
-        FROM sensor_readings
-        WHERE is_problem = 1
-        GROUP BY date, fault_category
-        ORDER BY date ASC
-    """, conn)
-    conn.close()
+    try:
+        df = pd.read_sql_query("""
+            SELECT substr(created_at, 1, 10) as date, fault_category, COUNT(*) as occurrences
+            FROM sensor_readings
+            WHERE is_problem = 1
+            GROUP BY date, fault_category
+            ORDER BY date ASC
+        """, conn)
+    except Exception as e:
+        logger.warning(f"Error querying time series: {e}")
+        df = pd.DataFrame(columns=["date", "fault_category", "occurrences"])
+    finally:
+        conn.close()
     return df
